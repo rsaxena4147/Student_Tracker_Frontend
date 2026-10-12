@@ -1,22 +1,65 @@
-import { Link } from 'react-router-dom';
-import { leetUrl, ccUrl } from '../lib/api';
+import { useState } from 'react';
+import { updateStudent, leetUrl, ccUrl } from '../lib/api';
 import { Breadcrumbs, StatCard, fmtDate } from '../components/ui';
 
-export function Head({ student, totals, sync }) {
+export function Head({ student, totals, sync, onSaved }) {
   const cc = student.codechef || {};
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formErr, setFormErr] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    setSaving(true); setFormErr('');
+    try {
+      await updateStudent(student._id, {
+        name: fd.get('name'),
+        leetcodeId: fd.get('leetcodeId'),
+        codechefId: fd.get('codechefId'),
+      });
+      setEditing(false);
+      if (onSaved) onSaved();
+    } catch (e2) { setFormErr(e2.response?.data?.message || e2.message); }
+    setSaving(false);
+  };
+
   return (<>
     <Breadcrumbs trail={[{ label: 'Home', to: '/' }, { label: (student.classId && student.classId.name) || 'Class', to: student.classId ? '/class/' + student.classId._id : '/' }, { label: student.name }]} />
     <div className="card p-5 mb-4">
-      <h1 className="text-xl font-bold">{student.name}</h1>
-      <div className="text-sm text-slate-500 mt-1">Roll {student.rollNo}</div>
-      <div className="flex flex-wrap gap-2 mt-3 text-sm">
-        {student.leetcodeId
-          ? <a href={leetUrl(student.leetcodeId)} target="_blank" rel="noreferrer" className="btn">LeetCode: @{student.leetcodeId}</a>
-          : <span className="btn opacity-60">LeetCode: no id</span>}
-        {student.codechefId
-          ? <a href={ccUrl(student.codechefId)} target="_blank" rel="noreferrer" className="btn">CodeChef: @{student.codechefId}</a>
-          : <span className="btn opacity-60">CodeChef: no id</span>}
-      </div>
+      {!editing ? (<>
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <h1 className="text-xl font-bold">{student.name}</h1>
+            <div className="text-sm text-slate-500 mt-1">Roll {student.rollNo}</div>
+          </div>
+          <button className="btn" onClick={() => { setFormErr(''); setEditing(true); }}>Edit</button>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-3 text-sm">
+          {student.leetcodeId
+            ? <a href={leetUrl(student.leetcodeId)} target="_blank" rel="noreferrer" className="btn">LeetCode: @{student.leetcodeId}</a>
+            : <span className="btn opacity-60">LeetCode: no id</span>}
+          {student.codechefId
+            ? <a href={ccUrl(student.codechefId)} target="_blank" rel="noreferrer" className="btn">CodeChef: @{student.codechefId}</a>
+            : <span className="btn opacity-60">CodeChef: no id</span>}
+        </div>
+      </>) : (
+        <form onSubmit={submit}>
+          <div className="flex items-center gap-3 mb-3">
+            <h1 className="text-xl font-bold">Edit student</h1>
+            <div className="flex-1" />
+            <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+            <button type="button" className="btn" disabled={saving} onClick={() => { setEditing(false); setFormErr(''); }}>Cancel</button>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-2">
+            <input name="name" className="input" placeholder="Full name *" required defaultValue={student.name} />
+            <input name="leetcodeId" className="input" placeholder="LeetCode username" defaultValue={student.leetcodeId || ''} />
+            <input name="codechefId" className="input" placeholder="CodeChef username" defaultValue={student.codechefId || ''} />
+          </div>
+          <div className="text-xs text-slate-400 mt-2">Username badalne par purane sync stats reset ho jaate hain — Save ke baad dobara Sync karein.</div>
+          {formErr && <div className="mt-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formErr}</div>}
+        </form>
+      )}
     </div>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <StatCard label="LeetCode solved" value={totals.leetcodeSolved} tone="amber" sub={sync.syncedAt ? 'synced ' + fmtDate(sync.syncedAt) : 'not synced'} />

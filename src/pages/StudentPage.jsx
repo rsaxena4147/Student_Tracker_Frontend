@@ -32,5 +32,5 @@ export default function StudentPage() {
   if (!data) return <Loading label="Loading student…" />;
   const { student, totals } = data;
   const sync = student.leetcode || {};
-  return (<div><Head student={student} totals={totals} sync={sync} /><Charts data={data} /><MonthBlock data={data} sel={sel} setSel={setSel} month={month} /><Back student={student} /></div>);
+  return (<div><Head student={student} totals={totals} sync={sync} onSaved={load} /><Charts data={data} /><MonthBlock data={data} sel={sel} setSel={setSel} month={month} /><Back student={student} /></div>);
 }

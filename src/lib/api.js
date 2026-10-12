@@ -12,6 +12,13 @@ export const fetchMonth = (id, ym) => api.get(`/students/${id}/month/${ym}`).the
 export const syncStudent = (id) => api.post(`/students/${id}/sync`).then((r) => r.data);
 export const syncClass = (classId) => api.post(`/import/sync-class/${classId}`).then((r) => r.data);
 export const addStudent = (classId, body) => api.post(`/classes/${classId}/students`, body).then((r) => r.data);
+export const updateStudent = (id, body) => api.patch(`/students/${id}`, body).then((r) => r.data);
+export const importExcel = (file, className) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  if (className) fd.append('className', className);
+  return api.post('/import/excel', fd).then((r) => r.data);
+};
 
 export const leetUrl = (u) => (u ? `https://leetcode.com/u/${u}/` : '');
 export const ccUrl = (u) => (u ? `https://www.codechef.com/users/${u}` : '');
