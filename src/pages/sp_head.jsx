@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { updateStudent, leetUrl, ccUrl } from '../lib/api';
+import { updateStudent, exportStudentExcel, saveBlob, blobErrMsg, leetUrl, ccUrl } from '../lib/api';
 import { Breadcrumbs, StatCard, fmtDate } from '../components/ui';
 
 export function Head({ student, totals, sync, onSaved }) {
@@ -7,6 +7,18 @@ export function Head({ student, totals, sync, onSaved }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formErr, setFormErr] = useState('');
+  const [downloading, setDownloading] = useState(false);
+  const [dlErr, setDlErr] = useState('');
+
+  const doDownload = async () => {
+    setDownloading(true); setDlErr('');
+    try {
+      const blob = await exportStudentExcel(student._id);
+      const cls = (student.classId && student.classId.name) || '';
+      saveBlob(blob, `${cls ? cls + ' - ' : ''}${student.name}.xlsx`);
+    } catch (e) { setDlErr(await blobErrMsg(e)); }
+    setDownloading(false);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -33,8 +45,12 @@ export function Head({ student, totals, sync, onSaved }) {
             <h1 className="text-xl font-bold">{student.name}</h1>
             <div className="text-sm text-slate-500 mt-1">Roll {student.rollNo}</div>
           </div>
-          <button className="btn" onClick={() => { setFormErr(''); setEditing(true); }}>Edit</button>
+          <div className="flex items-center gap-2">
+            <button className="btn" disabled={downloading} onClick={doDownload}>{downloading ? 'Preparing…' : '⬇ Download Excel'}</button>
+            <button className="btn" onClick={() => { setFormErr(''); setDlErr(''); setEditing(true); }}>Edit</button>
+          </div>
         </div>
+        {dlErr && <div className="text-xs text-red-600 mt-2">Download failed: {dlErr}</div>}
         <div className="flex flex-wrap gap-2 mt-3 text-sm">
           {student.leetcodeId
             ? <a href={leetUrl(student.leetcodeId)} target="_blank" rel="noreferrer" className="btn">LeetCode: @{student.leetcodeId}</a>

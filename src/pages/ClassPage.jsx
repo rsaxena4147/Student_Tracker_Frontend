@@ -1,7 +1,7 @@
 // PART A — header + state + submit (appended by part B)
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchStudents, addStudent, syncClass } from '../lib/api';
+import { fetchStudents, addStudent, syncClass, exportClassExcel, saveBlob, blobErrMsg } from '../lib/api';
 import { leetUrl, ccUrl, scoreTone, scoreBg } from '../lib/api';
 import { Breadcrumbs, Empty, Loading, ErrorBox, fmtDate } from '../components/ui';
 
@@ -23,6 +23,17 @@ export default function ClassPage() {
   const [formErr, setFormErr] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
+  const [downloading, setDownloading] = useState(false);
+
+  const doDownload = async () => {
+    setDownloading(true); setSyncMsg('');
+    try {
+      const blob = await exportClassExcel(id);
+      saveBlob(blob, ((res && res.class && res.class.name) || 'class') + '.xlsx');
+      setSyncMsg('Excel downloaded — check your downloads.');
+    } catch (e) { setSyncMsg('Download failed: ' + await blobErrMsg(e)); }
+    setDownloading(false);
+  };
 
   const doSync = async () => {
     setSyncing(true); setSyncMsg('');
@@ -61,7 +72,7 @@ export default function ClassPage() {
 
   if (err) return <ErrorBox message={err} onRetry={load} />;
   if (!res) return <Loading label="Loading students…" />;
-  return <Body res={res} q={q} setQ={setQ} sort={sort} setSort={setSort} order={order} setOrder={setOrder} page={page} setPage={setPage} showAdd={showAdd} setShowAdd={setShowAdd} submitAdd={submitAdd} saving={saving} formErr={formErr} syncing={syncing} syncMsg={syncMsg} doSync={doSync} />;
+  return <Body res={res} q={q} setQ={setQ} sort={sort} setSort={setSort} order={order} setOrder={setOrder} page={page} setPage={setPage} showAdd={showAdd} setShowAdd={setShowAdd} submitAdd={submitAdd} saving={saving} formErr={formErr} syncing={syncing} syncMsg={syncMsg} doSync={doSync} downloading={downloading} doDownload={doDownload} />;
 }
 
 function Body(p) {
@@ -73,6 +84,7 @@ function Body(p) {
         <h1 className="text-xl font-bold">{res.class.name}</h1>
         <span className="badge bg-slate-100 text-slate-600">{res.total} students</span>
         <div className="flex-1" />
+        <button className="btn" disabled={p.downloading} onClick={p.doDownload}>{p.downloading ? 'Preparing…' : '⬇ Download Excel'}</button>
         <button className="btn" disabled={p.syncing} onClick={p.doSync}>{p.syncing ? 'Syncing…' : 'Sync LeetCode + CodeChef'}</button>
         <button className="btn btn-primary" onClick={() => p.setShowAdd(!p.showAdd)}>+ Add student</button>
       </div>

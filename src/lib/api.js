@@ -20,6 +20,34 @@ export const importExcel = (file, className) => {
   return api.post('/import/excel', fd).then((r) => r.data);
 };
 
+export const exportClassExcel = (classId) =>
+  api.get(`/classes/${classId}/export`, { responseType: 'blob' }).then((r) => r.data);
+export const exportStudentExcel = (id) =>
+  api.get(`/students/${id}/export`, { responseType: 'blob' }).then((r) => r.data);
+
+export function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// error responses come back as blobs — unwrap the JSON message
+export async function blobErrMsg(e) {
+  try {
+    const d = e && e.response && e.response.data;
+    if (d && typeof d.text === 'function') {
+      const t = await d.text();
+      try { return JSON.parse(t).message || t; } catch { return t; }
+    }
+  } catch { /* fall through */ }
+  return (e && e.message) || 'Download failed';
+}
+
 export const leetUrl = (u) => (u ? `https://leetcode.com/u/${u}/` : '');
 export const ccUrl = (u) => (u ? `https://www.codechef.com/users/${u}` : '');
 
