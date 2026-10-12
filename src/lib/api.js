@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api', timeout: 60000 });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 60000,
+});
 
 export const fetchClasses = () => api.get('/classes').then((r) => r.data);
 export const fetchStudents = (classId, params) => api.get(`/classes/${classId}/students`, { params }).then((r) => r.data);
@@ -28,4 +31,3 @@ export function scoreBg(n) {
 }
 
 export default api;
-
